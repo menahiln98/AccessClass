@@ -8,6 +8,14 @@ This is one Flow, not two — Portion 2 extended the same AccessClassFlow
 built in Portion 1 with three more @listen steps rather than creating a
 second, separate Flow, since each new stage depends on the previous
 stages' output already existing in the shared state.
+
+DEPLOYMENT NOTE: main.py's /upload route now does the fast part of
+upload_and_register (storage upload + DB record creation, ~1-2s) itself,
+synchronously, so it can hand a real document_id back to the browser
+immediately and redirect to /documents/{id} instead of holding the HTTP
+request open for the full 1-18 minute pipeline. That document_id/storage_path
+are pre-set on flow.state before kickoff(), so this stage below just reuses
+them instead of creating a duplicate record.
 """
 
 from typing import Optional
@@ -62,7 +70,7 @@ def _fail(document_id: Optional[str], stage: str, exc: Exception) -> None:
     raise PipelineError(message) from exc
 
 
-# These fields were introduced after the original Portion 1 schema.  Keeping
+# These fields were introduced after the original Portion 1 schema. Keeping
 # this compatibility path means an existing database can still process and
 # display a document while the one-time SQL migration is being applied.
 _PORTION_2_COLUMNS = {"explanation_document", "study_pack", "indexed_chunk_count"}
@@ -75,7 +83,7 @@ def _persist_stage(document_id: str, status: str, **fields) -> None:
     except SupabaseOperationError as exc:
         missing_column = "Could not find" in str(exc) and "schema cache" in str(exc)
         if missing_column and _PORTION_2_COLUMNS.intersection(fields):
-            # ``status`` exists in the original schema.  The full result remains
+            # ``status`` exists in the original schema. The full result remains
             # available in the current upload response; reloading it later needs
             # the migration in db/schema.sql.
             update_document(document_id, status=status)
@@ -86,6 +94,13 @@ def _persist_stage(document_id: str, status: str, **fields) -> None:
 class AccessClassFlow(Flow[DocumentState]):
     @start()
     def upload_and_register(self) -> str:
+        # Fast path: main.py already uploaded the PDF and created the DB
+        # record synchronously before kickoff(), so it could hand the
+        # document_id back to the browser right away. Reuse that instead of
+        # doing the work (and creating a duplicate record) twice.
+        if self.state.document_id and self.state.storage_path:
+            return self.state.document_id
+
         try:
             storage_path = upload_pdf(self.state.local_pdf_path, self.state.filename)
             document_id = create_document_record(self.state.filename, storage_path)
@@ -172,7 +187,7 @@ class AccessClassFlow(Flow[DocumentState]):
             _persist_stage(self.state.document_id, status="done", indexed_chunk_count=count)
         except Exception as exc:
             # Retrieval is an enhancement, not a reason to discard a completed
-            # accessibility report and study pack.  Qdrant outages/credentials
+            # accessibility report and study pack. Qdrant outages/credentials
             # are surfaced in the results page and the document remains usable.
             warning = f"Ask This Lecture is temporarily unavailable: {exc}"
             self.state.retrieval_warning = warning
@@ -187,7 +202,12 @@ class AccessClassFlow(Flow[DocumentState]):
 
 
 def run_pipeline(local_pdf_path: str, filename: str) -> AccessClassFlow:
-    """Run the full pipeline (Stages 1-6's indexing step) and return the completed flow."""
+    """Run the full pipeline synchronously and return the completed flow.
+
+    Kept for local dev / tests. main.py's /upload route no longer calls this
+    directly in production — see AccessClassFlow usage there for the
+    background-thread version that doesn't block the HTTP request.
+    """
     flow = AccessClassFlow()
     flow.kickoff(inputs={"local_pdf_path": local_pdf_path, "filename": filename})
     return flow

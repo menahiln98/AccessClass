@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="5">
+    <title>Processing your lecture — AccessClass</title>
+    <link rel="stylesheet" href="/static/index.css">
+</head>
+<body>
+    <main class="container">
+        <h1>Processing your lecture&hellip;</h1>
+        <p>Current stage: <strong>{{ status }}</strong></p>
+        <p>
+            This can take anywhere from 1 to 18 minutes depending on the
+            document's length and how many images/diagrams it contains.
+            This page checks for updates automatically every 5 seconds &mdash;
+            you can leave it open, or come back to this link later.
+        </p>
+        <p><small>Document ID: {{ document_id }}</small></p>
+    </main>
+</body>
+</html>

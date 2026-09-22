@@ -2,36 +2,65 @@
 AccessClass — FastAPI entry point (Portion 1 + Portion 2, one merged app).
 
 Routes:
-    GET  /                               upload form
-    POST /upload                         runs the full pipeline on the uploaded PDF, shows results
-    GET  /documents/{id}                 re-view a previously processed document from Supabase
-    GET  /documents/{id}/ask             "Ask This Lecture" question form
-    POST /documents/{id}/ask             answers a question, grounded in that document only
-    POST /documents/{id}/mark-confusing  adds a page to the revision queue
+    GET  /                              upload form
+    POST /upload                        registers the document, starts the
+                                         pipeline in the background, redirects
+                                         to /documents/{id}
+    GET  /documents/{id}                shows a "processing" polling page
+                                         while the pipeline runs, or the
+                                         finished results once status="done"
+    GET  /documents/{id}/ask            "Ask This Lecture" question form
+    POST /documents/{id}/ask            answers a question, grounded in that
+                                         document only
+    POST /documents/{id}/mark-confusing adds a page to the revision queue
+
+DEPLOYMENT NOTE: the pipeline can take 1-18 minutes depending on document
+length and image count. Every hosting platform's proxy/load balancer
+(Railway, Vercel, Fly, etc.) kills HTTP requests held open that long, so
+/upload no longer waits for the pipeline to finish. It does the fast part
+(upload to Supabase Storage + create the DB record, ~1-2s) synchronously,
+then hands the rest of AccessClassFlow's stages to a background thread and
+redirects the browser to /documents/{id} right away. That page polls itself
+via a plain <meta http-equiv="refresh"> tag (no JavaScript, consistent with
+the rest of the UI) until the document's Supabase status reaches "done" or
+"error". See flow.py's AccessClassFlow.upload_and_register for the matching
+change on the pipeline side.
 """
 
 import os
 import tempfile
+import threading
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 import config
-from agents.document_reader import DocumentReadError
 from agents.grounded_learning_agent import GroundedLearningError, ask
 from db.supabase_client import (
     SupabaseOperationError,
     add_revision_entry,
+    create_document_record,
     get_document,
     get_signed_url,
     list_revision_queue,
+    upload_pdf,
 )
-from flow import PipelineError, run_pipeline
+from flow import AccessClassFlow, PipelineError
 
 templates = Jinja2Templates(directory="templates")
+
+# Statuses flow.py's _persist_stage()/_fail() can leave a document row in.
+# Anything not in this set means the pipeline is still running.
+_TERMINAL_STATUSES = {"done", "error"}
+
+# PDFs saved here must outlive the /upload request, since a background
+# thread keeps processing after the response is sent. The thread deletes its
+# own file when it finishes (success or failure) — see _run_pipeline_in_background.
+_UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "accessclass_uploads")
 
 
 @asynccontextmanager
@@ -40,6 +69,7 @@ async def lifespan(_app: FastAPI):
     # erroring confusingly on the first upload. Now validates Portion 2's
     # Gemini/Qdrant credentials too, since this is one merged app.
     config.validate_portion2_env()
+    os.makedirs(_UPLOAD_DIR, exist_ok=True)
     yield
 
 
@@ -69,6 +99,25 @@ def _study_pack_links(study_pack) -> dict | None:
         return None
 
 
+def _run_pipeline_in_background(local_pdf_path: str, filename: str, document_id: str, storage_path: str) -> None:
+    """Runs the remaining pipeline stages (2-6) after upload+registration already happened.
+
+    Any exception here is already caught and persisted to the document's
+    Supabase row (status="error") by flow.py's _fail(), so there's nothing
+    further to do with it here except make sure the temp file is cleaned up.
+    """
+    try:
+        flow = AccessClassFlow()
+        flow.state.local_pdf_path = local_pdf_path
+        flow.state.filename = filename
+        flow.state.document_id = document_id
+        flow.state.storage_path = storage_path
+        flow.kickoff()
+    finally:
+        if os.path.exists(local_pdf_path):
+            os.remove(local_pdf_path)
+
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse(request, "index.html", {})
@@ -91,38 +140,36 @@ def upload(request: Request, file: UploadFile = File(...)):
             {"error": f"'{file.filename}' is empty. Please upload a non-empty PDF."},
         )
 
-    tmp_path = None
+    tmp_path = os.path.join(_UPLOAD_DIR, f"{uuid.uuid4()}.pdf")
+    with open(tmp_path, "wb") as tmp_file:
+        tmp_file.write(contents)
+
+    # Fast path, kept synchronous: upload to Supabase Storage + create the DB
+    # record. This is a couple of seconds, not minutes, so it's safe to keep
+    # in the request/response cycle — it's what lets us hand back a real
+    # document_id immediately.
     try:
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
-            tmp_file.write(contents)
-            tmp_path = tmp_file.name
-
-        flow = run_pipeline(tmp_path, file.filename)
-
-        return templates.TemplateResponse(
-            request,
-            "results.html",
-            {
-                "document_id": flow.state.document_id,
-                "parsed": flow.state.parsed_document,
-                "report": flow.state.accessibility_report,
-                "tagged": flow.state.subject_tagged_document,
-                "explanations": flow.state.explanation_document,
-                "study_pack": _study_pack_links(flow.state.study_pack),
-                "indexed_chunk_count": flow.state.indexed_chunk_count,
-                "retrieval_warning": flow.state.retrieval_warning,
-            },
-        )
-
-    except (DocumentReadError, PipelineError, SupabaseOperationError) as exc:
+        storage_path = upload_pdf(tmp_path, file.filename)
+        document_id = create_document_record(file.filename, storage_path)
+    except (SupabaseOperationError, Exception) as exc:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
         return templates.TemplateResponse(
             request,
             "index.html",
-            {"error": str(exc)},
+            {"error": f"Could not start processing '{file.filename}': {exc}"},
         )
-    finally:
-        if tmp_path and os.path.exists(tmp_path):
-            os.remove(tmp_path)
+
+    # Everything else (OCR/parsing, accessibility audit, subject tagging,
+    # explanations, study pack, retrieval indexing) happens off the request.
+    thread = threading.Thread(
+        target=_run_pipeline_in_background,
+        args=(tmp_path, file.filename, document_id, storage_path),
+        daemon=True,
+    )
+    thread.start()
+
+    return RedirectResponse(url=f"/documents/{document_id}", status_code=303)
 
 
 @app.get("/documents/{document_id}", response_class=HTMLResponse)
@@ -137,6 +184,22 @@ def view_document(request: Request, document_id: str):
             request,
             "index.html",
             {"error": f"No document found with id '{document_id}'."},
+        )
+
+    status = record.get("status", "")
+
+    if status not in _TERMINAL_STATUSES:
+        return templates.TemplateResponse(
+            request,
+            "processing.html",
+            {"document_id": document_id, "status": status or "starting"},
+        )
+
+    if status == "error":
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            {"error": record.get("error_message") or "Processing failed. Please try uploading again."},
         )
 
     return templates.TemplateResponse(

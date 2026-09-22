@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AccessClass — Results</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f5fb;--card:#fff;--border:#e4e6f4;--border-strong:#d3d6ee;--indigo:#4f46e5;--indigo-dark:#4338ca;--indigo-tint:#eef0fd;--navy:#1c2140;--gray:#6b7280;--gray-light:#9ca3af;--error-bg:#fdecea;--error-text:#9c2c22;--radius-lg:18px;--radius-md:12px;--radius-sm:8px;--shadow-card:0 1px 2px rgba(28,33,64,.04),0 8px 24px rgba(28,33,64,.05);}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--navy);font-family:"Inter",-apple-system,"Segoe UI",sans-serif;}
+h1,h2,h3,.brand-name,.panel-title,.section-title{font-family:"Playfair Display",Georgia,serif;}
+.site-header{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 2.5rem;background:var(--card);border-bottom:1px solid var(--border);}
+.brand{display:flex;align-items:center;gap:.75rem;}
+.brand-mark{width:40px;height:40px;border-radius:10px;background:var(--indigo);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand-name{font-weight:800;font-size:1.35rem;color:var(--navy);}
+.brand-tagline{font-size:.65rem;letter-spacing:.08em;color:var(--gray-light);font-weight:600;text-transform:uppercase;}
+.btn-primary{display:inline-block;background:var(--indigo);color:#fff;font-weight:600;font-size:.9rem;padding:.6rem 1.3rem;border-radius:999px;border:none;text-decoration:none;cursor:pointer;}
+.btn-primary:hover{background:var(--indigo-dark);}
+.landing-main{max-width:1180px;margin:0 auto;padding:2.75rem 2rem 5rem;}
+.layout-grid{display:grid;grid-template-columns:340px 1fr;gap:1.75rem;align-items:start;}
+@media (max-width:900px){.layout-grid{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:1.75rem;}
+.card+.card{margin-top:1.75rem;}
+.panel-title{font-size:1.15rem;font-weight:700;margin:0 0 .2rem;}
+.panel-subtitle{color:var(--gray);font-size:.85rem;margin:0 0 1.2rem;}
+.pipeline-list,.audit-list{list-style:none;margin:0;padding:0;}
+.pipeline-item,.audit-item{display:flex;gap:.9rem;position:relative;padding-bottom:1.3rem;}
+.pipeline-item:last-child,.audit-item:last-child{padding-bottom:0;}
+.pipeline-item::before{content:"";position:absolute;left:15px;top:32px;bottom:0;width:1px;background:var(--border);}
+.pipeline-item:last-child::before{display:none;}
+.pipeline-number{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:var(--indigo);color:#fff;font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;}
+.pipeline-name{font-weight:700;font-size:.92rem;margin:0 0 .15rem;color:var(--navy);}
+.pipeline-desc{color:var(--gray);font-size:.82rem;line-height:1.45;margin:0;}
+.audit-bar{width:3px;border-radius:2px;flex-shrink:0;}
+.audit-bar.high,.audit-bar.medium{background:#f0ad4e;}
+.audit-bar.low{background:#22c55e;}
+.audit-name{font-weight:700;font-size:.88rem;margin:0 0 .15rem;color:var(--navy);}
+.audit-desc{color:var(--gray);font-size:.8rem;line-height:1.45;margin:0;}
+.empty-note{color:var(--gray-light);font-style:italic;font-size:.88rem;}
+.tab-bar{display:flex;gap:.25rem;border-bottom:1px solid var(--border);margin-bottom:1.5rem;flex-wrap:wrap;}
+.tab-btn{background:none;border:none;padding:.9rem 1.2rem;font-family:inherit;font-size:.95rem;font-weight:600;color:var(--gray);cursor:pointer;border-bottom:2px solid transparent;}
+.tab-btn.active{color:var(--indigo);border-bottom-color:var(--indigo);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.section-title{font-size:1.5rem;font-weight:700;margin:0 0 .2rem;}
+.section-subtitle{color:var(--gray);font-size:.92rem;margin:0 0 1.5rem;}
+.chapter-item{border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem 1.3rem;margin-bottom:.9rem;}
+.chapter-item strong{display:block;font-size:1rem;font-weight:600;color:var(--navy);margin-bottom:.3rem;}
+.chapter-item span.pages{color:var(--gray-light);font-size:.8rem;}
+.chapter-item audio{width:100%;margin-top:.6rem;height:36px;}
+.glossary-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media (max-width:700px){.glossary-grid{grid-template-columns:1fr;}}
+.glossary-card{border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem 1.3rem;}
+.glossary-card .term-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.4rem;}
+.glossary-card .term{font-weight:700;color:var(--navy);}
+.glossary-card .page-tag{font-size:.72rem;color:var(--gray-light);background:var(--indigo-tint);padding:.1rem .5rem;border-radius:999px;}
+.glossary-card .def{color:var(--gray);font-size:.88rem;line-height:1.5;margin:0;}
+.info-strip{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-top:1.75rem;}
+@media (max-width:900px){.info-strip{grid-template-columns:1fr;}}
+.info-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.1rem 1.3rem;}
+.info-card h4{margin:0 0 .4rem;font-size:.95rem;font-family:inherit;}
+.info-card p{margin:0;color:var(--gray);font-size:.85rem;line-height:1.5;}
+.ask-form,.confuse-form{display:flex;gap:.6rem;}
+.confuse-form{flex-direction:column;max-width:420px;}
+.ask-form input[type=text],.confuse-form input{flex:1;padding:.8rem 1rem;border:1.5px solid var(--border-strong);border-radius:999px;font-size:.9rem;font-family:inherit;}
+.confuse-form input{border-radius:var(--radius-sm);}
+.confuse-form label{font-size:.78rem;font-weight:700;color:var(--gray-light);text-transform:uppercase;letter-spacing:.05em;}
+.btn-ask{background:var(--indigo);color:#fff;border:none;border-radius:999px;padding:.8rem 1.6rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.error-banner{background:var(--error-bg);color:var(--error-text);border:1px solid var(--error-text);border-radius:var(--radius-sm);padding:.8rem 1rem;font-size:.9rem;margin-bottom:1.25rem;}
+.doc-id{color:var(--gray-light);font-size:.82rem;margin:0 0 1.5rem;}
+.doc-id a{color:var(--indigo);text-decoration:none;font-weight:600;}
+</style>
+</head>
+<body>
+<header class="site-header">
+    <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <rect x="3" y="4" width="5" height="12" rx="1.5" fill="#ffffff"/>
+                <rect x="11" y="8" width="5" height="8" rx="1.5" fill="#c7cbfa"/>
+            </svg>
+        </span>
+        <span class="brand-text">
+            <span class="brand-name">AccessClass</span><br>
+            <span class="brand-tagline">Agentic AI for Accessible Learning</span>
+        </span>
+    </div>
+    <a class="btn-primary" href="/">Process another document</a>
+</header>
+
+<main class="landing-main">
+    <p class="doc-id">Document ID: <code>{{ document_id }}</code> &nbsp;·&nbsp; <a href="/">&larr; upload a different file</a></p>
+
+    <div class="layout-grid">
+        <div>
+            <section class="card">
+                <p class="panel-title">Agent Pipeline</p>
+                <p class="panel-subtitle">6 stages · sequential processing</p>
+                <ul class="pipeline-list">
+                    <li class="pipeline-item"><span class="pipeline-number">✓</span><div><p class="pipeline-name">Document Reader</p><p class="pipeline-desc">{{ parsed.total_pages }} pages, {{ parsed.elements|length }} elements extracted</p></div></li>
+                    <li class="pipeline-item"><span class="pipeline-number">✓</span><div><p class="pipeline-name">Accessibility Auditor</p><p class="pipeline-desc">{{ report.issues|length }} barrier(s) detected</p></div></li>
+                    <li class="pipeline-item"><span class="pipeline-number">✓</span><div><p class="pipeline-name">Subject Interpreter</p><p class="pipeline-desc">{{ tagged.tags|length }} elements classified</p></div></li>
+                    <li class="pipeline-item"><span class="pipeline-number">✓</span><div><p class="pipeline-name">Explanation Agent</p><p class="pipeline-desc">{{ explanations.explanations|length if explanations else 0 }} elements explained</p></div></li>
+                    <li class="pipeline-item"><span class="pipeline-number">✓</span><div><p class="pipeline-name">Study-Pack Agent</p><p class="pipeline-desc">HTML, audio chapters &amp; glossary generated</p></div></li>
+                    <li class="pipeline-item"><span class="pipeline-number">✓</span><div><p class="pipeline-name">Grounded Learning Agent</p><p class="pipeline-desc">{{ indexed_chunk_count }} chunk(s) indexed</p></div></li>
+                </ul>
+            </section>
+
+            <section class="card">
+                <p class="panel-title">Accessibility Audit</p>
+                <p class="panel-subtitle">Barriers detected</p>
+                {% if report.issues|length == 0 %}
+                <p class="empty-note">No accessibility barriers detected.</p>
+                {% else %}
+                <ul class="audit-list">
+                    {% for issue in report.issues %}
+                    <li class="audit-item">
+                        <span class="audit-bar {{ issue.severity }}"></span>
+                        <div><p class="audit-name">{{ issue.issue_type.replace('_',' ')|title }} (page {{ issue.page_number }})</p><p class="audit-desc">{{ issue.description }}</p></div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </section>
+        </div>
+
+        <div>
+            {% if retrieval_warning %}
+            <div class="error-banner">{{ retrieval_warning }}</div>
+            {% endif %}
+
+            <div class="card">
+                <div class="tab-bar">
+                    <button class="tab-btn active" data-tab="pack">Study Pack</button>
+                    <button class="tab-btn" data-tab="audio">Audio Chapters</button>
+                    <button class="tab-btn" data-tab="glossary">Glossary</button>
+                    <button class="tab-btn" data-tab="ask">Ask This Lecture</button>
+                    <button class="tab-btn" data-tab="revise">Revision Queue</button>
+                </div>
+
+                <div class="tab-panel active" id="tab-pack">
+                    <p class="section-title">Accessible Study Pack</p>
+                    <p class="section-subtitle">Screen-reader ready · keyboard navigable · structured headings</p>
+                    {% if study_pack %}
+                    <p><a class="btn-primary" href="{{ study_pack.html_url }}" target="_blank">Open accessible HTML study pack &rarr;</a></p>
+                    {% for chapter in study_pack.audio_chapters %}
+                    <div class="chapter-item"><strong>{{ chapter.title }}</strong><span class="pages">Pages {{ chapter.page_start }}-{{ chapter.page_end }}</span></div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="empty-note">Study pack is not available yet.</p>
+                    {% endif %}
+                </div>
+
+                <div class="tab-panel" id="tab-audio">
+                    <p class="section-title">Audio Chapters</p>
+                    <p class="section-subtitle">Each topic as a separate audio — jump directly to what you need</p>
+                    {% if study_pack and study_pack.audio_chapters|length > 0 %}
+                    {% for chapter in study_pack.audio_chapters %}
+                    <div class="chapter-item"><strong>{{ chapter.title }}</strong><span class="pages">Pages {{ chapter.page_start }}-{{ chapter.page_end }}</span><audio controls src="{{ chapter.url }}"></audio></div>
+                    {% endfor %}
+                    {% else %}
+                    <p class="empty-note">No audio chapters were generated.</p>
+                    {% endif %}
+                </div>
+
+                <div class="tab-panel" id="tab-glossary">
+                    <p class="section-title">Glossary</p>
+                    <p class="section-subtitle">Key technical terms extracted and explained from your lecture</p>
+                    {% if study_pack and study_pack.glossary|length > 0 %}
+                    <div class="glossary-grid">
+                        {% for term in study_pack.glossary %}
+                        <div class="glossary-card"><div class="term-row"><span class="term">{{ term.term }}</span></div><p class="def">{{ term.definition }}</p></div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="empty-note">No glossary terms were generated.</p>
+                    {% endif %}
+                </div>
+
+                <div class="tab-panel" id="tab-ask">
+                    <p class="section-title">Ask This Lecture</p>
+                    <p class="section-subtitle">Every answer cites the source page — grounded in your uploaded document only</p>
+                    <p><a class="btn-primary" href="/documents/{{ document_id }}/ask">Open Ask This Lecture &rarr;</a></p>
+                </div>
+
+                <div class="tab-panel" id="tab-revise">
+                    <p class="section-title">Mark a page as confusing</p>
+                    <p class="section-subtitle">Sections you flag here go to your revision queue for later review</p>
+                    <form class="confuse-form" action="/documents/{{ document_id }}/mark-confusing" method="post">
+                        <label for="page_number">Page number</label>
+                        <input type="number" id="page_number" name="page_number" min="1" required>
+                        <label for="note">Note (optional)</label>
+                        <input type="text" id="note" name="note" placeholder="What was confusing?">
+                        <button class="btn-ask" type="submit" style="margin-top:.5rem;">Add to revision queue</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="info-strip">
+                <div class="info-card"><h4>Evidence-Grounded Answers</h4><p>Every response cites the source page — no hallucination, no invention.</p></div>
+                <div class="info-card"><h4>Confidence Warnings</h4><p>Unclear OCR or diagrams trigger explicit uncertainty flags before answering.</p></div>
+                <div class="info-card"><h4>Academic Integrity</h4><p>Does not write assignments, exams, or take-home reports. Learning only.</p></div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+});
+</script>
+</body>
+</html>

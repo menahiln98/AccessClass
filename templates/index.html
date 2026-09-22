@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AccessClass — Upload a Lecture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/index.css">
+</head>
+<body class="landing">
+
+    <header class="site-header">
+        <div class="brand">
+            <span class="brand-mark" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect x="3" y="4" width="5" height="12" rx="1.5" fill="#ffffff"/>
+                    <rect x="11" y="8" width="5" height="8" rx="1.5" fill="#c7cbfa"/>
+                </svg>
+            </span>
+            <span class="brand-text">
+                <span class="brand-name">AccessClass</span><br>
+                <span class="brand-tagline">Agentic AI for Accessible Learning</span>
+            </span>
+        </div>
+        <nav class="site-nav">
+            <a class="nav-link" href="#how-it-works">How It Works</a>
+            <a class="nav-link" href="#subject-section">Subjects</a>
+            <a class="nav-link" href="#about">About</a>
+            <a class="btn-primary" href="#upload-panel">Upload Lecture</a>
+        </nav>
+    </header>
+
+    <main class="landing-main">
+        <div class="layout-grid">
+
+            <!-- Left column: upload form + pipeline -->
+            <div>
+                <section class="card" id="upload-panel">
+                    <h1 class="panel-title">Upload Lecture</h1>
+                    <p class="panel-subtitle">PDF notes, slides, or scanned handouts</p>
+
+                    {% if error %}
+                    <div class="error-banner" role="alert">
+                        <strong>Something went wrong:</strong> {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <form action="/upload" method="post" enctype="multipart/form-data">
+                        <label class="dropzone-label" for="file">
+                            <input type="file" id="file" name="file" accept="application/pdf" required>
+                            <span class="dropzone-icon" aria-hidden="true">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 16V4"/>
+                                    <path d="M7 9l5-5 5 5"/>
+                                    <path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>
+                                </svg>
+                            </span>
+                            <span class="dropzone-title">Drop PDF here</span>
+                            <span class="dropzone-subtitle">or click to browse</span>
+                        </label>
+
+                        <span class="field-label" id="subject-section">Subject</span>
+                        <div class="subject-list">
+
+                            <div class="subject-option">
+                                <input type="radio" id="subj-pf" name="subject_hint" value="programming_fundamentals_cpp">
+                                <label for="subj-pf">
+                                    <span class="subject-icon" aria-hidden="true">{ }</span>
+                                    Programming Fundamentals &amp; C++
+                                </label>
+                            </div>
+
+                            <div class="subject-option">
+                                <input type="radio" id="subj-dsa" name="subject_hint" value="data_structures_algorithms">
+                                <label for="subj-dsa">
+                                    <span class="subject-icon" aria-hidden="true">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+                                            <circle cx="10" cy="4" r="2.2"/>
+                                            <circle cx="4" cy="16" r="2.2"/>
+                                            <circle cx="16" cy="16" r="2.2"/>
+                                            <path d="M8.5 5.8L5.5 13.8M11.5 5.8L14.5 13.8"/>
+                                        </svg>
+                                    </span>
+                                    Data Structures &amp; Algorithms
+                                </label>
+                            </div>
+
+                            <div class="subject-option">
+                                <input type="radio" id="subj-calc" name="subject_hint" value="calculus">
+                                <label for="subj-calc">
+                                    <span class="subject-icon" aria-hidden="true" style="font-family: 'Playfair Display', serif; font-size: 1.05rem;">&int;</span>
+                                    Calculus
+                                </label>
+                            </div>
+
+                            <div class="subject-option">
+                                <input type="radio" id="subj-ict" name="subject_hint" value="ict">
+                                <label for="subj-ict">
+                                    <span class="subject-icon" aria-hidden="true">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+                                            <circle cx="10" cy="10" r="7"/>
+                                            <ellipse cx="10" cy="10" rx="3" ry="7"/>
+                                            <path d="M3 10h14"/>
+                                        </svg>
+                                    </span>
+                                    ICT
+                                </label>
+                            </div>
+
+                            <div class="subject-option">
+                                <input type="radio" id="subj-oop" name="subject_hint" value="oop">
+                                <label for="subj-oop">
+                                    <span class="subject-icon" aria-hidden="true">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+                                            <path d="M10 3l6.5 3.75v6.5L10 17l-6.5-3.75v-6.5z"/>
+                                            <path d="M10 3v14M3.5 6.75l6.5 3.75 6.5-3.75"/>
+                                        </svg>
+                                    </span>
+                                    OOP
+                                </label>
+                            </div>
+
+                            <div class="subject-option">
+                                <input type="radio" id="subj-db" name="subject_hint" value="database_systems">
+                                <label for="subj-db">
+                                    <span class="subject-icon" aria-hidden="true">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+                                            <ellipse cx="10" cy="5" rx="6" ry="2.3"/>
+                                            <path d="M4 5v10c0 1.27 2.69 2.3 6 2.3s6-1.03 6-2.3V5"/>
+                                            <path d="M4 10c0 1.27 2.69 2.3 6 2.3s6-1.03 6-2.3"/>
+                                        </svg>
+                                    </span>
+                                    Database Systems
+                                </label>
+                            </div>
+
+                            <div class="subject-option">
+                                <input type="radio" id="subj-os" name="subject_hint" value="operating_systems">
+                                <label for="subj-os">
+                                    <span class="subject-icon" aria-hidden="true">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+                                            <rect x="3" y="4" width="14" height="12" rx="1.5"/>
+                                            <path d="M3 7.5h14"/>
+                                            <circle cx="5.2" cy="5.7" r="0.4" fill="currentColor" stroke="none"/>
+                                        </svg>
+                                    </span>
+                                    Operating Systems
+                                </label>
+                            </div>
+
+                            <div class="subject-option">
+                                <input type="radio" id="subj-cn" name="subject_hint" value="computer_networks">
+                                <label for="subj-cn">
+                                    <span class="subject-icon" aria-hidden="true">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+                                            <circle cx="4" cy="4" r="1.8"/>
+                                            <circle cx="16" cy="4" r="1.8"/>
+                                            <circle cx="4" cy="16" r="1.8"/>
+                                            <circle cx="16" cy="16" r="1.8"/>
+                                            <circle cx="10" cy="10" r="1.8"/>
+                                            <path d="M5.3 5.3L8.7 8.7M14.7 5.3L11.3 8.7M5.3 14.7L8.7 11.3M14.7 14.7L11.3 11.3"/>
+                                        </svg>
+                                    </span>
+                                    Computer Networks
+                                </label>
+                            </div>
+
+                            <div class="subject-option">
+                                <input type="radio" id="subj-ai" name="subject_hint" value="artificial_intelligence_ml">
+                                <label for="subj-ai">
+                                    <span class="subject-icon" aria-hidden="true">
+                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" stroke="none">
+                                            <path d="M10 2l1.6 5.4L17 9l-5.4 1.6L10 16l-1.6-5.4L3 9l5.4-1.6z"/>
+                                        </svg>
+                                    </span>
+                                    AI / Machine Learning
+                                </label>
+                            </div>
+
+                        </div>
+                        <p class="subject-note">
+                            Optional — AccessClass classifies each part of your lecture automatically, so a single
+                            document can mix subjects (e.g. a DSA lecture with a Calculus refresher). This selection
+                            is just a hint and doesn't limit what gets processed.
+                        </p>
+
+                        <button type="submit" class="btn-submit">Process Lecture</button>
+                    </form>
+                </section>
+
+                <section class="card" id="how-it-works">
+                    <h2 class="panel-title" style="font-size:1.2rem;">Agent Pipeline</h2>
+                    <p class="pipeline-subtitle">6 stages &middot; sequential processing</p>
+
+                    <ol class="pipeline-list">
+                        <li class="pipeline-item">
+                            <span class="pipeline-number">1</span>
+                            <div>
+                                <p class="pipeline-name">Document Reader</p>
+                                <p class="pipeline-desc">Extracts text, headings, images, tables, and code blocks</p>
+                            </div>
+                        </li>
+                        <li class="pipeline-item">
+                            <span class="pipeline-number">2</span>
+                            <div>
+                                <p class="pipeline-name">Accessibility Auditor</p>
+                                <p class="pipeline-desc">Detects barriers: scanned pages, missing structure, unlabelled visuals</p>
+                            </div>
+                        </li>
+                        <li class="pipeline-item">
+                            <span class="pipeline-number">3</span>
+                            <div>
+                                <p class="pipeline-name">Subject Interpreter</p>
+                                <p class="pipeline-desc">Identifies code, DSA diagrams, Calculus notation, and lecture text across all supported subjects</p>
+                            </div>
+                        </li>
+                        <li class="pipeline-item">
+                            <span class="pipeline-number">4</span>
+                            <div>
+                                <p class="pipeline-name">Explanation Agent</p>
+                                <p class="pipeline-desc">Produces plain-language descriptions of visuals, code, and equations</p>
+                            </div>
+                        </li>
+                        <li class="pipeline-item">
+                            <span class="pipeline-number">5</span>
+                            <div>
+                                <p class="pipeline-name">Study-Pack Agent</p>
+                                <p class="pipeline-desc">Creates structured HTML, audio chapters, glossary, and lecture chunks</p>
+                            </div>
+                        </li>
+                        <li class="pipeline-item">
+                            <span class="pipeline-number">6</span>
+                            <div>
+                                <p class="pipeline-name">Grounded Learning Agent</p>
+                                <p class="pipeline-desc">Answers questions only from the processed lecture, with page citations</p>
+                            </div>
+                        </li>
+                    </ol>
+                </section>
+            </div>
+
+            <!-- Right column: hero + feature cards -->
+            <div>
+                <section class="card hero-card">
+                    <div class="hero-mark" aria-hidden="true">
+                        <svg width="30" height="30" viewBox="0 0 20 20" fill="none">
+                            <rect x="3" y="4" width="5" height="12" rx="1.5" fill="#4f46e5"/>
+                            <rect x="11" y="8" width="5" height="8" rx="1.5" fill="#9ea4f4"/>
+                        </svg>
+                    </div>
+                    <h2 class="hero-title">Upload a Lecture to Begin</h2>
+                    <p class="hero-desc">
+                        AccessClass converts technical PDF lectures into accessible study packs,
+                        chapter-based audio, glossaries, and grounded Q&amp;A — all sourced from
+                        your own document.
+                    </p>
+                    <div class="pill-row">
+                        <span class="pill">Study Pack</span>
+                        <span class="pill">Audio Chapters</span>
+                        <span class="pill">Glossary</span>
+                        <span class="pill">Ask This Lecture</span>
+                        <span class="pill">Revision Queue</span>
+                    </div>
+                </section>
+
+                <section class="feature-grid" id="about">
+                    <div class="feature-card">
+                        <h3 class="feature-title">Evidence-Grounded Answers</h3>
+                        <p class="feature-desc">Every response cites the source page — no hallucination, no invention.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3 class="feature-title">Confidence Warnings</h3>
+                        <p class="feature-desc">Unclear OCR or diagrams trigger explicit uncertainty flags before answering.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3 class="feature-title">Academic Integrity</h3>
+                        <p class="feature-desc">Does not write assignments, exams, or take-home reports. Learning only.</p>
+                    </div>
+                </section>
+            </div>
+
+        </div>
+    </main>
+
+    <a class="help-button" href="mailto:" title="Help">?</a>
+    <script>
+const fileInput = document.getElementById('file');
+const dzTitle = document.querySelector('.dropzone-title');
+const dzSubtitle = document.querySelector('.dropzone-subtitle');
+const dzIcon = document.querySelector('.dropzone-icon');
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length > 0) {
+    const name = fileInput.files[0].name;
+    dzTitle.textContent = name.length > 30 ? name.slice(0, 27) + '…' : name;
+    dzTitle.style.color = '#4f46e5';
+    dzSubtitle.textContent = 'Click to replace';
+    dzIcon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+  }
+});
+</script>
+</body>
+</html>

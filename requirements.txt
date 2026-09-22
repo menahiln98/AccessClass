@@ -1,0 +1,32 @@
+# --- Web framework (serves the HTML/CSS UI + upload/API endpoints) ---
+fastapi==0.141.1
+uvicorn[standard]==0.38.0
+python-multipart==0.0.20
+jinja2==3.1.6
+
+# --- Data validation ---
+pydantic==2.12.5
+python-dotenv==1.2.3
+
+# --- Document processing (Stage 1: Document Reader) ---
+pymupdf==1.28.2
+pytesseract==0.3.13
+pillow==11.3.0
+
+# --- Agent orchestration (Stage 3: Subject Interpreter) ---
+crewai==1.15.21
+
+# --- Gemini vision + embeddings (Stage 4, Stage 6) ---
+google-genai==2.23.0
+
+# --- Text-to-speech chapter audio (Stage 5) ---
+edge-tts==7.2.8
+
+# --- Vector database client (Stage 6) ---
+qdrant-client==1.19.0
+
+# --- Persistence ---
+supabase==2.31.0
+
+# --- Testing ---
+pytest==8.4.2

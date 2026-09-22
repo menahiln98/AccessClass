@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AccessClass — Revision Queue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f5fb;--card:#fff;--border:#e4e6f4;--indigo:#4f46e5;--indigo-dark:#4338ca;--indigo-tint:#eef0fd;--navy:#1c2140;--gray:#6b7280;--gray-light:#9ca3af;--radius-lg:18px;--radius-md:12px;--shadow-card:0 1px 2px rgba(28,33,64,.04),0 8px 24px rgba(28,33,64,.05);}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--navy);font-family:"Inter",-apple-system,"Segoe UI",sans-serif;}
+h1,.brand-name,.section-title{font-family:"Playfair Display",Georgia,serif;font-weight:700;}
+.site-header{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 2.5rem;background:var(--card);border-bottom:1px solid var(--border);}
+.brand{display:flex;align-items:center;gap:.75rem;}
+.brand-mark{width:40px;height:40px;border-radius:10px;background:var(--indigo);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.brand-name{font-weight:800;font-size:1.35rem;}
+.brand-tagline{font-size:.65rem;letter-spacing:.08em;color:var(--gray-light);font-weight:600;text-transform:uppercase;}
+.btn-primary{background:var(--indigo);color:#fff;font-weight:600;font-size:.9rem;padding:.6rem 1.3rem;border-radius:999px;text-decoration:none;}
+.landing-main{max-width:900px;margin:0 auto;padding:2.75rem 2rem 5rem;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);padding:1.75rem;}
+.doc-id{color:var(--gray-light);font-size:.82rem;margin:0 0 1.5rem;}
+.tab-bar{display:flex;gap:.25rem;border-bottom:1px solid var(--border);margin-bottom:1.5rem;flex-wrap:wrap;}
+.tab-btn{padding:.9rem 1.2rem;font-size:.95rem;font-weight:600;color:var(--gray);text-decoration:none;border-bottom:2px solid transparent;}
+.tab-btn.active{color:var(--indigo);border-bottom-color:var(--indigo);}
+.section-title{font-size:1.5rem;font-weight:700;margin:0 0 .2rem;}
+.section-subtitle{color:var(--gray);font-size:.92rem;margin:0 0 1.5rem;}
+.queue-item{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);border-left:3px solid var(--indigo);border-radius:var(--radius-md);padding:1rem 1.3rem;margin-bottom:.9rem;}
+.queue-item strong{display:block;font-size:1rem;color:var(--navy);margin-bottom:.2rem;}
+.queue-item span{color:var(--gray-light);font-size:.82rem;}
+.empty-note{color:var(--gray-light);font-style:italic;font-size:.9rem;}
+.info-note{background:var(--indigo-tint);border-radius:var(--radius-md);padding:1.1rem 1.3rem;margin-top:1.3rem;font-size:.88rem;color:var(--gray);line-height:1.5;}
+.info-note strong{color:var(--navy);}
+</style>
+</head>
+<body>
+<header class="site-header">
+    <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <rect x="3" y="4" width="5" height="12" rx="1.5" fill="#ffffff"/>
+                <rect x="11" y="8" width="5" height="8" rx="1.5" fill="#c7cbfa"/>
+            </svg>
+        </span>
+        <span class="brand-text"><span class="brand-name">AccessClass</span><br><span class="brand-tagline">Agentic AI for Accessible Learning</span></span>
+    </div>
+    <a class="btn-primary" href="/">Process another document</a>
+</header>
+<main class="landing-main">
+    <p class="doc-id">Document ID: <code>{{ document_id }}</code></p>
+    <div class="card">
+        <div class="tab-bar">
+            <a class="tab-btn" href="/documents/{{ document_id }}">Study Pack</a>
+            <a class="tab-btn" href="/documents/{{ document_id }}">Audio Chapters</a>
+            <a class="tab-btn" href="/documents/{{ document_id }}">Glossary</a>
+            <a class="tab-btn" href="/documents/{{ document_id }}/ask">Ask This Lecture</a>
+            <a class="tab-btn active" href="#">Revision Queue</a>
+        </div>
+        <p class="section-title">Revision Queue</p>
+        <p class="section-subtitle">Sections you marked as confusing — revisit before your next session</p>
+
+        {% if queue|length == 0 %}
+        <p class="empty-note">No pages marked as confusing yet.</p>
+        {% else %}
+        {% for entry in queue %}
+        <div class="queue-item">
+            <div><strong>{{ entry.note or "Page " + entry.page_number|string }}</strong><span>Page {{ entry.page_number }} · marked {{ entry.created_at }}</span></div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="info-note"><strong>How to flag sections</strong><br>While reading your Study Pack, use "Mark a page as confusing" on the results page. It will appear here for focused revision before your next session.</div>
+    </div>
+</main>
+</body>
+</html>

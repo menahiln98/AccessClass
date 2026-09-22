@@ -1,0 +1,159 @@
+:root {
+    --color-bg: #f7f8fa;
+    --color-card: #ffffff;
+    --color-border: #dfe3e8;
+    --color-text: #1f2933;
+    --color-muted: #616e7c;
+    --color-primary: #2f6fed;
+    --color-error-bg: #fdecea;
+    --color-error-text: #9c2c22;
+    --color-severity-high: #c0392b;
+    --color-severity-medium: #b8860b;
+    --color-severity-low: #2e7d32;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+.page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+}
+
+h1 {
+    margin-bottom: 0.25rem;
+}
+
+.subtitle {
+    color: var(--color-muted);
+    margin-top: 0;
+}
+
+.scope-note {
+    color: var(--color-muted);
+    font-size: 0.9rem;
+}
+
+.card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 420px;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.upload-form label {
+    font-weight: 600;
+}
+
+.upload-form input[type="file"] {
+    padding: 0.5rem 0;
+}
+
+button {
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.alert {
+    padding: 0.9rem 1.1rem;
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+}
+
+.alert-error {
+    background: var(--color-error-bg);
+    color: var(--color-error-text);
+    border: 1px solid var(--color-error-text);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.data-table th,
+.data-table td {
+    text-align: left;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+}
+
+.data-table th {
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.scroll-box {
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: #eef1f5;
+    color: var(--color-text);
+}
+
+.badge-info {
+    background: #e6f0ff;
+    color: var(--color-primary);
+    margin-left: 0.5rem;
+}
+
+.badge-severity-high {
+    background: #fdecea;
+    color: var(--color-severity-high);
+}
+
+.badge-severity-medium {
+    background: #fff6e0;
+    color: var(--color-severity-medium);
+}
+
+.badge-severity-low {
+    background: #e9f7ec;
+    color: var(--color-severity-low);
+}
+
+.empty-note {
+    color: var(--color-muted);
+    font-style: italic;
+}

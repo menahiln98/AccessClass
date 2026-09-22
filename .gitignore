@@ -1,0 +1,42 @@
+# Environment / secrets
+.env
+.env.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+build/
+dist/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Testing / caching
+.pytest_cache/
+.test-fix/
+.test-fix-flow/
+.test-flow/
+.test-main/
+.test-rest/
+.test-tmp/
+.test-tmp2/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploaded/generated files if any get written locally
+*.mp3
+*.tmp

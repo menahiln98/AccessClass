@@ -58,6 +58,26 @@ ENV_SUPABASE_URL = "SUPABASE_URL"
 ENV_SUPABASE_KEY = "SUPABASE_KEY"
 ENV_SUPABASE_BUCKET = "SUPABASE_BUCKET"
 
+# ---------------------------------------------------------------------------
+# Pipeline executor
+# ---------------------------------------------------------------------------
+# Some deployments (a small always-on web container, e.g. Koyeb's free tier)
+# can run the full app process but shouldn't be trusted to keep a
+# threading.Thread alive for an 18-minute job — a free instance that scales
+# to zero after idle time, or gets recycled, would kill the pipeline
+# mid-run. For those, PIPELINE_EXECUTOR=github_actions makes /upload
+# dispatch the heavy Stages 1-6 run to a GitHub Actions job (see
+# .github/workflows/process_document.yml and worker.py) instead of a local
+# background thread. Local dev leaves PIPELINE_EXECUTOR unset and keeps
+# using the original in-process thread (main.py's _run_pipeline_in_background).
+ENV_PIPELINE_EXECUTOR = "PIPELINE_EXECUTOR"
+PIPELINE_EXECUTOR_THREAD = "thread"
+PIPELINE_EXECUTOR_GITHUB_ACTIONS = "github_actions"
+
+ENV_GITHUB_TOKEN = "GITHUB_TOKEN"
+ENV_GITHUB_REPO = "GITHUB_REPO"  # "owner/repo", e.g. "menahiln98/AccessClass"
+GITHUB_WORKFLOW_FILE = "process_document.yml"
+
 # Vars Portion 1 needs to run.
 REQUIRED_FOR_PORTION_1 = [
     ENV_GROQ_API_KEY,
@@ -70,6 +90,14 @@ REQUIRED_FOR_PORTION_2 = REQUIRED_FOR_PORTION_1 + [
     ENV_GEMINI_API_KEY,
     ENV_QDRANT_URL,
     ENV_QDRANT_API_KEY,
+]
+
+# Vars needed when the web process itself only serves routes (incl. the
+# live "Ask This Lecture" CrewAI call) and dispatches the heavy pipeline
+# elsewhere instead of running it in-process.
+REQUIRED_FOR_GITHUB_ACTIONS_EXECUTOR = REQUIRED_FOR_PORTION_2 + [
+    ENV_GITHUB_TOKEN,
+    ENV_GITHUB_REPO,
 ]
 
 DEFAULT_SUPABASE_BUCKET = "lectures"
@@ -108,6 +136,19 @@ def get_supabase_bucket() -> str:
     return os.environ.get(ENV_SUPABASE_BUCKET, DEFAULT_SUPABASE_BUCKET)
 
 
+def get_pipeline_executor() -> str:
+    """"thread" (default, local dev) or "github_actions" (see note above)."""
+    return os.environ.get(ENV_PIPELINE_EXECUTOR, PIPELINE_EXECUTOR_THREAD)
+
+
+def get_github_token() -> str:
+    return os.environ[ENV_GITHUB_TOKEN]
+
+
+def get_github_repo() -> str:
+    return os.environ[ENV_GITHUB_REPO]
+
+
 def _validate(required: list[str]) -> None:
     missing = [name for name in required if not os.environ.get(name)]
     if missing:
@@ -126,6 +167,15 @@ def validate_portion1_env() -> None:
 def validate_portion2_env() -> None:
     """Stages 4-6 additionally need Gemini + Qdrant credentials."""
     _validate(REQUIRED_FOR_PORTION_2)
+
+
+def validate_env_for_executor() -> None:
+    """What main.py's lifespan calls at startup — picks the right required-var
+    list for whichever PIPELINE_EXECUTOR this deployment is running as."""
+    if get_pipeline_executor() == PIPELINE_EXECUTOR_GITHUB_ACTIONS:
+        _validate(REQUIRED_FOR_GITHUB_ACTIONS_EXECUTOR)
+    else:
+        validate_portion2_env()
 
 
 # ---------------------------------------------------------------------------

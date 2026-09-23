@@ -47,9 +47,18 @@ from db.supabase_client import (
     get_document,
     get_signed_url,
     list_revision_queue,
+    update_document,
     upload_pdf,
 )
-from flow import AccessClassFlow, PipelineError
+from dispatch import DispatchError, trigger_pipeline_workflow
+
+# NOTE: `flow` (and therefore crewai/pymupdf/pytesseract via agents.*) is
+# imported lazily inside _run_pipeline_in_background below, not here at
+# module level. When PIPELINE_EXECUTOR=github_actions this process only
+# ever handles routes — including the live CrewAI call in /ask, which
+# agents.grounded_learning_agent above still needs — and never runs the
+# pipeline itself, so it never needs flow.py's heavier import graph
+# (Document Reader's OCR path, the Study-Pack Agent's Edge TTS, etc.).
 
 templates = Jinja2Templates(directory="templates")
 
@@ -66,9 +75,9 @@ _UPLOAD_DIR = os.path.join(tempfile.gettempdir(), "accessclass_uploads")
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     # Fail fast and clearly if required env vars are missing, instead of
-    # erroring confusingly on the first upload. Now validates Portion 2's
-    # Gemini/Qdrant credentials too, since this is one merged app.
-    config.validate_portion2_env()
+    # erroring confusingly on the first upload. Which vars are required
+    # depends on PIPELINE_EXECUTOR — see config.validate_env_for_executor().
+    config.validate_env_for_executor()
     os.makedirs(_UPLOAD_DIR, exist_ok=True)
     yield
 
@@ -102,10 +111,15 @@ def _study_pack_links(study_pack) -> dict | None:
 def _run_pipeline_in_background(local_pdf_path: str, filename: str, document_id: str, storage_path: str) -> None:
     """Runs the remaining pipeline stages (2-6) after upload+registration already happened.
 
+    Only used when PIPELINE_EXECUTOR=thread (the default, for local dev).
+    See dispatch.trigger_pipeline_workflow() for the github_actions path.
+
     Any exception here is already caught and persisted to the document's
     Supabase row (status="error") by flow.py's _fail(), so there's nothing
     further to do with it here except make sure the temp file is cleaned up.
     """
+    from flow import AccessClassFlow  # local import — see note near the top of this file
+
     try:
         flow = AccessClassFlow()
         flow.state.local_pdf_path = local_pdf_path
@@ -162,12 +176,24 @@ def upload(request: Request, file: UploadFile = File(...)):
 
     # Everything else (OCR/parsing, accessibility audit, subject tagging,
     # explanations, study pack, retrieval indexing) happens off the request.
-    thread = threading.Thread(
-        target=_run_pipeline_in_background,
-        args=(tmp_path, file.filename, document_id, storage_path),
-        daemon=True,
-    )
-    thread.start()
+    # Which happens depends on PIPELINE_EXECUTOR (see config.py):
+    if config.get_pipeline_executor() == config.PIPELINE_EXECUTOR_GITHUB_ACTIONS:
+        # The web process itself never runs the pipeline — it hands the job
+        # to GitHub Actions, which downloads this same PDF from Supabase
+        # Storage itself (see worker.py), so the local temp copy isn't needed.
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        try:
+            trigger_pipeline_workflow(document_id, storage_path, file.filename)
+        except DispatchError as exc:
+            update_document(document_id, status="error", error_message=f"Could not start processing: {exc}")
+    else:
+        thread = threading.Thread(
+            target=_run_pipeline_in_background,
+            args=(tmp_path, file.filename, document_id, storage_path),
+            daemon=True,
+        )
+        thread.start()
 
     return RedirectResponse(url=f"/documents/{document_id}", status_code=303)
 

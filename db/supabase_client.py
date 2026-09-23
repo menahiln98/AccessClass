@@ -41,6 +41,21 @@ def upload_pdf(local_path: str, filename: str) -> str:
     return storage_path
 
 
+def download_pdf(storage_path: str, local_path: str) -> None:
+    """Download a file from the Supabase Storage bucket to a local path.
+
+    Used by worker.py: when the pipeline runs in a GitHub Actions job rather
+    than in-process, that job needs its own local copy of the PDF that
+    main.py's /upload route already uploaded to Storage.
+    """
+    try:
+        data = get_client().storage.from_(get_supabase_bucket()).download(storage_path)
+    except Exception as exc:
+        raise SupabaseOperationError(f"Failed to download '{storage_path}' from Supabase Storage: {exc}") from exc
+    with open(local_path, "wb") as file_obj:
+        file_obj.write(data)
+
+
 def upload_bytes(storage_path: str, data: bytes, content_type: str) -> str:
     """Upload raw bytes (e.g. generated HTML) to the bucket at an exact path. Returns that path."""
     try:

@@ -45,23 +45,25 @@ def test_ask_returns_unsupported_when_nothing_relevant(mock_embed, mock_search):
     assert "not appear to be covered" in result.answer
 
 
-@patch("agents.grounded_learning_agent.Crew")
+@patch("agents.grounded_learning_agent.requests.post")
 @patch("agents.grounded_learning_agent.get_groq_api_key", return_value="dummy-test-key")
 @patch("agents.grounded_learning_agent.search_chunks")
 @patch("agents.grounded_learning_agent.embed_text", return_value=[0.1, 0.2])
-def test_ask_returns_grounded_answer_when_relevant(mock_embed, mock_search, _mock_key, mock_crew_cls):
+def test_ask_returns_grounded_answer_when_relevant(mock_embed, mock_search, _mock_key, mock_post):
     mock_search.return_value = [{"page_start": 3, "page_end": 3, "text": "A stack is LIFO.", "score": 0.9}]
 
-    mock_crew_instance = MagicMock()
-    mock_result = MagicMock()
-    mock_result.pydantic = AskAnswer(
+    expected = AskAnswer(
         question="What is a stack?",
         answer="A stack is a Last-In-First-Out data structure.",
         is_supported=True,
         citations=[Citation(page_number=3, snippet="A stack is LIFO.")],
     )
-    mock_crew_instance.kickoff.return_value = mock_result
-    mock_crew_cls.return_value = mock_crew_instance
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "choices": [{"message": {"content": expected.model_dump_json()}}]
+    }
+    mock_response.raise_for_status.return_value = None
+    mock_post.return_value = mock_response
 
     result = ask("doc-1", "What is a stack?")
     assert result.is_supported is True

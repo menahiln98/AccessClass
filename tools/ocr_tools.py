@@ -6,13 +6,22 @@ scanned / image-only pages), per the proposal's Document Reader spec.
 """
 
 import io
+import os
 
 import pymupdf
 import pytesseract
 from PIL import Image
 from pytesseract import Output
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# Only override pytesseract's binary path if the environment says where it
+# is (e.g. a non-standard Windows install). Left unset, pytesseract looks
+# up "tesseract" on PATH, which is where `apt-get install tesseract-ocr`
+# (Dockerfile, GitHub Actions runner) and most package managers put it —
+# hardcoding a Windows path here previously broke OCR on every Linux
+# deployment silently (pytesseract would just fail to find the binary).
+_tesseract_cmd = os.environ.get("TESSERACT_CMD")
+if _tesseract_cmd:
+    pytesseract.pytesseract.tesseract_cmd = _tesseract_cmd
 
 OCR_RENDER_DPI = 300
 

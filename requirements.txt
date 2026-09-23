@@ -1,3 +1,16 @@
+# This is the SLIM dependency set for the always-on web app (main.py) —
+# routes, uploads, status polling, and the live "Ask This Lecture" endpoint.
+# It deliberately excludes crewai/pymupdf/pytesseract/pillow/edge-tts: none
+# of those are imported by main.py's routes anymore (flow.py is imported
+# lazily, only on the PIPELINE_EXECUTOR=thread local-dev path; ask() in
+# agents/grounded_learning_agent.py now calls Groq directly instead of
+# through crewai). That keeps this install small enough to deploy anywhere,
+# since crewai alone drags in ~700MB of chromadb/lancedb/onnxruntime that
+# main.py's request-handling process never needs to hold in memory.
+#
+# For the full pipeline (Stages 1-6, run via GitHub Actions or local
+# PIPELINE_EXECUTOR=thread dev), see requirements-worker.txt instead.
+
 # --- Web framework (serves the HTML/CSS UI + upload/API endpoints) ---
 fastapi==0.141.1
 uvicorn[standard]==0.38.0
@@ -8,25 +21,17 @@ jinja2==3.1.6
 pydantic==2.12.5
 python-dotenv==1.2.3
 
-# --- Document processing (Stage 1: Document Reader) ---
-pymupdf==1.28.2
-pytesseract==0.3.13
-pillow==11.3.0
-
-# --- Agent orchestration (Stage 3: Subject Interpreter) ---
-crewai==1.15.21
-
-# --- Gemini vision + embeddings (Stage 4, Stage 6) ---
+# --- Gemini embeddings (Stage 6 retrieval, used by /ask) ---
 google-genai==2.23.0
 
-# --- Text-to-speech chapter audio (Stage 5) ---
-edge-tts==7.2.8
-
-# --- Vector database client (Stage 6) ---
+# --- Vector database client (Stage 6 retrieval, used by /ask) ---
 qdrant-client==1.19.0
 
 # --- Persistence ---
 supabase==2.31.0
 
-# --- Testing ---
-pytest==8.4.2
+# --- Direct Groq calls (ask()) + triggering the GitHub Actions worker (dispatch.py) ---
+requests==2.32.3
+
+# --- Retry logic for Groq calls in ask() ---
+tenacity==9.1.2

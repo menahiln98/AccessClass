@@ -9,23 +9,33 @@ Two entry points:
   chunks — with an explicit, deterministic refusal path when nothing
   relevant enough was retrieved, so an unsupported question never reaches
   the LLM to be answered from general knowledge.
+
+ask() calls Groq directly over HTTP rather than through a CrewAI
+Agent/Task/Crew. It was a single agent with a single task and no
+delegation, tool use, or multi-agent coordination — i.e. none of what
+CrewAI actually provides — so the wrapper added nothing but the cost of
+importing crewai (and its chromadb/lancedb dependencies) into whatever
+process calls ask(). The batched, multi-agent CrewAI Crews that do the
+actual document-processing work (Subject Interpreter, Explanation Agent,
+Study-Pack Agent) are untouched and live elsewhere in this codebase.
 """
 
 import time
 
-from crewai import LLM, Agent, Crew, Process, Task
+import requests
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from config import GROQ_BASE_URL, GROQ_MODEL, get_groq_api_key
 from db.qdrant_client import ensure_collection, search_chunks, upsert_chunks
 from models.document import ParsedDocument
-from models.qa import AskAnswer, Citation
+from models.qa import AskAnswer
 from tools.chunking import build_page_chunks
 from tools.gemini_tools import embed_text
 
-from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 def _is_rate_limit_error(exc: BaseException) -> bool:
     return "rate_limit_exceeded" in str(exc) or "429" in str(exc)
+
 
 _retry_on_rate_limit = retry(
     retry=retry_if_exception(_is_rate_limit_error),
@@ -34,9 +44,14 @@ _retry_on_rate_limit = retry(
     reraise=True,
 )
 
-@_retry_on_rate_limit
-def _kickoff_with_retry(crew, context_block, question):
-    return crew.kickoff(inputs={"context_block": context_block, "question": question})
+ANSWER_SYSTEM_PROMPT = (
+    "You are a Grounded Learning Agent. Answer a student's question using ONLY the "
+    "provided lecture excerpts. You never use outside knowledge, never guess, and "
+    "never help complete assignments or exams. If the excerpts don't answer the "
+    "question, you say so plainly."
+)
+
+ANSWER_TIMEOUT_SECONDS = 30
 
 MIN_RELEVANCE_SCORE = 0.55
 TOP_K = 5
@@ -65,32 +80,39 @@ def index_document(document_id: str, parsed: ParsedDocument) -> int:
     return len(chunks)
 
 
-def _build_answer_crew() -> Crew:
-    llm = LLM(model=GROQ_MODEL, provider="openai", api_key=get_groq_api_key(), base_url=GROQ_BASE_URL, temperature=0.0)
-    agent = Agent(
-        role="Grounded Learning Agent",
-        goal="Answer a student's question using ONLY the provided lecture excerpts.",
-        backstory="You never use outside knowledge, never guess, and never help complete assignments "
-        "or exams. If the excerpts don't answer the question, you say so plainly.",
-        llm=llm,
-        verbose=False,
-        allow_delegation=False,
+def _build_answer_prompt(context_block: str, question: str) -> str:
+    return (
+        f"Lecture excerpts (each labeled with its page number):\n{context_block}\n\n"
+        f"Question: {question}\n\n"
+        "Answer using ONLY the excerpts above. If they don't contain enough information to answer, "
+        "set is_supported to false and say so in the answer rather than guessing. "
+        "Cite the page number(s) you actually used, each with a short supporting snippet. "
+        "Do not complete assignments, write exam answers, or produce solutions to problems — "
+        "explain concepts only. Respond with a single JSON object with exactly these keys: "
+        '"question" (string), "answer" (string), "is_supported" (boolean), and "citations" '
+        '(a list of objects, each with "page_number" (integer) and "snippet" (string)).'
     )
-    task = Task(
-        description=(
-            "Lecture excerpts (each labeled with its page number):\n{context_block}\n\n"
-            "Question: {question}\n\n"
-            "Answer using ONLY the excerpts above. If they don't contain enough information to answer, "
-            "set is_supported to false and say so in the answer rather than guessing. "
-            "Cite the page number(s) you actually used, each with a short supporting snippet. "
-            "Do not complete assignments, write exam answers, or produce solutions to problems — "
-            "explain concepts only."
-        ),
-        expected_output="An AskAnswer with the question, the answer, is_supported, and citations.",
-        agent=agent,
-        output_pydantic=AskAnswer,
+
+
+@_retry_on_rate_limit
+def _call_groq_for_answer(context_block: str, question: str) -> AskAnswer:
+    response = requests.post(
+        f"{GROQ_BASE_URL}/chat/completions",
+        headers={"Authorization": f"Bearer {get_groq_api_key()}"},
+        json={
+            "model": GROQ_MODEL,
+            "temperature": 0.0,
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
+                {"role": "user", "content": _build_answer_prompt(context_block, question)},
+            ],
+        },
+        timeout=ANSWER_TIMEOUT_SECONDS,
     )
-    return Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False)
+    response.raise_for_status()
+    raw_content = response.json()["choices"][0]["message"]["content"]
+    return AskAnswer.model_validate_json(raw_content)
 
 
 def ask(document_id: str, question: str) -> AskAnswer:
@@ -113,17 +135,17 @@ def ask(document_id: str, question: str) -> AskAnswer:
         )
 
     context_block = "\n\n".join(f"[Page {m['page_start']}]\n{m['text']}" for m in relevant)
-    crew = _build_answer_crew()
     try:
-        result = _kickoff_with_retry(crew, context_block, question)
-    except Exception as exc:
-        raise GroundedLearningError(f"Answer generation failed: {exc}") from exc
-
-    if result.pydantic is None or not isinstance(result.pydantic, AskAnswer):
+        return _call_groq_for_answer(context_block, question)
+    except (requests.RequestException, KeyError, ValueError) as exc:
+        # Covers malformed/unparseable model output (bad JSON, missing fields) the
+        # same way the original CrewAI path handled a None result.pydantic: a
+        # soft, honest fallback rather than surfacing a raw parsing error to the student.
         return AskAnswer(
             question=question,
             answer="An answer could not be generated for this question. Please try rephrasing it.",
             is_supported=False,
             citations=[],
         )
-    return result.pydantic
+    except Exception as exc:
+        raise GroundedLearningError(f"Answer generation failed: {exc}") from exc

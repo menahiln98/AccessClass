@@ -20,7 +20,6 @@ on something a wait can't fix.
 
 import functools
 
-import pymupdf
 from google import genai
 from google.genai import errors, types
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
@@ -63,7 +62,15 @@ def get_client() -> genai.Client:
 
 
 def crop_page_to_png(pdf_path: str, page_number: int, bbox: list[float]) -> bytes:
-    """Render just the region of one page given by bbox ([x0, y0, x1, y1]) as PNG bytes."""
+    """Render just the region of one page given by bbox ([x0, y0, x1, y1]) as PNG bytes.
+
+    Only called by agents/explanation_agent.py (a pipeline stage), never by
+    the web app's live ask()/index_document() path — so pymupdf is imported
+    here, locally, rather than at module level, keeping it out of the
+    always-on web process's dependencies entirely.
+    """
+    import pymupdf
+
     doc = pymupdf.open(pdf_path)
     try:
         page = doc[page_number - 1]

@@ -1,0 +1,65 @@
+# Runs AccessClass's full six-stage pipeline (unchanged CrewAI agents, same
+# flow.py) for one uploaded document, on a standard GitHub-hosted runner.
+#
+# Triggered by dispatch.trigger_pipeline_workflow() (see dispatch.py), which
+# main.py's /upload route calls instead of starting a local background
+# thread when PIPELINE_EXECUTOR=github_actions. Standard runners on public
+# repositories don't consume billed Actions minutes, and the default job
+# timeout here (45 min) comfortably covers the documented 1-18 minute range
+# with headroom.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   GROQ_API_KEY, GEMINI_API_KEY, QDRANT_URL, QDRANT_API_KEY,
+#   SUPABASE_URL, SUPABASE_KEY
+
+name: Process AccessClass Document
+
+on:
+  workflow_dispatch:
+    inputs:
+      document_id:
+        description: "Supabase documents.id row to process"
+        required: true
+        type: string
+      storage_path:
+        description: "Path of the already-uploaded PDF in Supabase Storage"
+        required: true
+        type: string
+      filename:
+        description: "Original uploaded filename"
+        required: true
+        type: string
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies (Tesseract OCR, ffmpeg for Edge TTS)
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements-worker.txt
+
+      - name: Run pipeline
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: >
+          python worker.py
+          --document-id "${{ inputs.document_id }}"
+          --storage-path "${{ inputs.storage_path }}"
+          --filename "${{ inputs.filename }}"

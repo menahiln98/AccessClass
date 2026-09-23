@@ -50,6 +50,22 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements-worker.txt
 
+              - name: Debug secrets (lengths only, never the values)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+        run: |
+          echo "SUPABASE_URL length: ${#SUPABASE_URL}"
+          echo "SUPABASE_KEY length: ${#SUPABASE_KEY}"
+          echo "GROQ_API_KEY length: ${#GROQ_API_KEY}"
+          echo "GEMINI_API_KEY length: ${#GEMINI_API_KEY}"
+          echo "QDRANT_URL length: ${#QDRANT_URL}"
+          echo "QDRANT_API_KEY length: ${#QDRANT_API_KEY}"
+
       - name: Run pipeline
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
